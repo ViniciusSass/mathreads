@@ -10,7 +10,7 @@ import stat
 from datetime import datetime
 
 
-__maximum_seconds_between_collections = 120
+__maximum_seconds_between_collections = 70
 __credentials_file = os.path.expanduser("~/.mathreads_creds")
 
 
