@@ -19,14 +19,19 @@ class MAThreadsError(Exception):
 
 
 def authenticate(dp_debug_url, data_dir):
-    aux = dp_debug_url.split("/")[:-2]
+    aux = dp_debug_url.split("/")[0:3]
     aux += ["SASLogon", "v1", "tickets"]
     tickets_url = "/".join(aux)
     credentials = get_credentials()
     username, password = credentials[0], credentials[1]
     r = requests.post(tickets_url, data={"username": username, "password": password})
     st_url = r.headers["Location"]
-    st = requests.post(st_url, data={"service": dp_debug_url + "/"}).text
+    # Service URL should always be the original DPDebug URL
+    aux = dp_debug_url.split("/")[0:3]
+    aux += ["ci65", "DPDebug"]
+    service = "/".join(aux) + "/"
+    print("service url " + service)
+    st = requests.post(st_url, data={"service": service}).text
     params = {"ticket": st}
     set_cookie_header = requests.post(dp_debug_url + "/", data={"username": username, "password": password,
                                                                 "login": "Submit"}, params=params).headers["Set-Cookie"]
