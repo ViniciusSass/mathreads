@@ -190,13 +190,15 @@ if __name__ == "__main__":
     dp_debug_url = args.dp_debug_url
     data_dir = args.data_dir
     action = args.action
-    log_file = data_dir + "/mathreads.log"
-    logging.basicConfig(filename=log_file, format="%(asctime)s %(levelname)s %(message)s")
     try:
         if action == "collect-events":
             if not dp_debug_url:
-                raise MAThreadsError("error: you must specify dp_debug_url with collect-events.")
+                raise MAThreadsError("error: you must specify dp-debug-url with collect-events.")
+            if dp_debug_url[-1] == "/":
+                raise MAThreadsError("error: dp-debug-url should not have a trailing slash.")
             initialize_data_dir(data_dir)
+            log_file = data_dir + "/mathreads.log"
+            logging.basicConfig(filename=log_file, format="%(asctime)s %(levelname)s %(message)s")
             if not is_authenticated(dp_debug_url, data_dir):
                 authenticate(dp_debug_url, data_dir)
             cookie, ticket = get_auth_info(data_dir)
