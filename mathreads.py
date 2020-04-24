@@ -30,13 +30,12 @@ def authenticate(dp_debug_url, data_dir):
     aux = dp_debug_url.split("/")[0:3]
     aux += ["ci65", "DPDebug"]
     service = "/".join(aux) + "/"
-    print("service url " + service)
     st = requests.post(st_url, data={"service": service}).text
     params = {"ticket": st}
     set_cookie_header = requests.post(dp_debug_url + "/", data={"username": username, "password": password,
                                                                 "login": "Submit"}, params=params).headers["Set-Cookie"]
     cookie = {set_cookie_header.split("=")[0]: set_cookie_header.split("=")[1].split("; ")[0]}
-    register_for_thread_events(dp_debug_url, cookie, st)
+    register_for_thread_events(dp_debug_url, cookie, st, data_dir)
     with open(data_dir + "/auth_info", "w") as f:
         f.write(str(cookie) + "," + st)
 
@@ -85,10 +84,21 @@ def get_auth_info(data_dir):
         return None, None
 
 
-def register_for_thread_events(dp_debug_url, cookie, ticket):
+def register_for_thread_events(dp_debug_url, cookie, ticket, data_dir):
     monitor_url = dp_debug_url + "/monitor.jsp"
     params = {"ticket": ticket}
     requests.get(monitor_url, cookies=cookie, params=params)
+    update_registry_datetime(data_dir)
+
+
+def update_registry_datetime(data_dir):
+    with open(data_dir + "/registry_datetime", "w") as rd:
+        rd.write(str(datetime.now()))
+
+
+def get_registry_datetime(data_dir):
+    with open(data_dir + "/registry_datetime", "r") as rd:
+        return datetime.strptime(rd.read(), "%Y-%m-%d %H:%M:%S.%f")
 
 
 def get_events(dp_debug_url, cookie, ticket):
@@ -122,6 +132,9 @@ def get_persistence_connection(data_dir):
 
 def persist_events(events, data_dir):
     for e in events:
+        # Skip if it's a stale event from before registry datetime
+        if datetime.fromtimestamp(int(e["createdTime"]) // 1000) < get_registry_datetime(data_dir):
+            continue
         conn = get_persistence_connection(data_dir)
         cursor = conn.cursor()
         values = e.values()
